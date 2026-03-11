@@ -28,16 +28,14 @@ Lua-only OpenMW 0.49/0.50 mod that reduces enemy player-tunneling by periodicall
 BetterAITargeting/
   BetterAITargeting.omwscripts
   scripts/
-    YourName/
-      BetterAITargeting/
+    BetterAITargeting/
         enemy_local.lua
         defender_local.lua
         global.lua
         shared.lua
         settings.lua
   l10n/
-    YourName/
-      BetterAITargeting/
+    BetterAITargeting/
         en.yaml
   README.md
 ```

@@ -1,6 +1,6 @@
-GLOBAL: scripts/YourName/BetterAITargeting/global.lua
-GLOBAL: scripts/YourName/BetterAITargeting/settings.lua
-NPC: scripts/YourName/BetterAITargeting/enemy_local.lua
-NPC: scripts/YourName/BetterAITargeting/defender_local.lua
-CREATURE: scripts/YourName/BetterAITargeting/enemy_local.lua
-CREATURE: scripts/YourName/BetterAITargeting/defender_local.lua
+GLOBAL: scripts/BetterAITargeting/global.lua
+GLOBAL: scripts/BetterAITargeting/settings.lua
+NPC: scripts/BetterAITargeting/enemy_local.lua
+NPC: scripts/BetterAITargeting/defender_local.lua
+CREATURE: scripts/BetterAITargeting/enemy_local.lua
+CREATURE: scripts/BetterAITargeting/defender_local.lua
