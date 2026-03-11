@@ -103,7 +103,7 @@ local function pulseRetarget()
 
     shared.log(debugLogging, 'TARGET', ('retargeting to %s, distance2=%.2f'):format(best.id, bestDistanceSq))
     clearCombatPackages(debugLogging)
-    AI.startPackage({ type = 'Combat', target = best })
+    AI.startPackage({ type = 'Combat', target = best, cancelOther = false })
 
     cooldown = shared.readSetting(settingsSection, 'retargetCooldownSeconds')
 end

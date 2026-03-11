@@ -2,15 +2,15 @@ local I = require('openmw.interfaces')
 
 I.Settings.registerPage {
     key = 'BetterAITargeting',
-    l10n = 'BetterAITargeting',
+    l10n = 'YourName/BetterAITargeting',
     name = 'pageName',
     description = 'pageDescription',
 }
 
 I.Settings.registerGroup {
-    key = 'BetterAITargetingMain',
+    key = 'SettingsGlobalBetterAITargeting',
     page = 'BetterAITargeting',
-    l10n = 'BetterAITargeting',
+    l10n = 'YourName/BetterAITargeting',
     name = 'groupName',
     permanentStorage = false,
     settings = {

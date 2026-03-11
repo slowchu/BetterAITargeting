@@ -1,33 +1,26 @@
 # BetterAITargeting
 
-Lua-only OpenMW 0.49/0.50 mod that reduces enemy player-tunneling by periodically retargeting hostile actors from the player to the nearest valid nearby player-side defender (followers/escorts/helpers), using only documented Lua APIs.
+Lua-only OpenMW 0.49/0.50 mod that reduces enemy player-tunneling by periodically retargeting hostile actors from the player to nearby valid player-side defenders (followers/escorts/helpers), using only documented APIs.
 
 ## Architecture
 
-- **Script registration** is handled by `BetterAITargeting.omwscripts`, attaching:
-  - `global.lua` + `settings.lua` as global scripts.
-  - `enemy_local.lua` and `defender_local.lua` to `NPC` and `CREATURE`.
-- **Local scripts and nearby visibility**:
-  - `enemy_local.lua` and `defender_local.lua` run as local scripts, so they can use `openmw.nearby` for nearby active objects/cells.
-  - They only modify `self` (enemy AI package state for `enemy_local.lua`; registry membership events for `defender_local.lua`).
-- **Global coordination**:
-  - `defender_local.lua` reports register/unregister through `core.sendGlobalEvent`.
-  - `global.lua` owns registry writes in `openmw.storage.globalSection(...)` and sets lifetime to `Temporary`.
-  - Registry mutation uses `getCopy(...)` before `set(...)`.
-- **Enemy retarget logic** (`enemy_local.lua`):
-  - Runs in `onUpdate(dt)` pulse.
-  - Reads active combat target with `interfaces.AI.getActiveTarget('Combat')`.
-  - Only overrides when current active target is the player.
-  - Selects nearest valid registered defender by squared distance (`(a.position - b.position):length2()`) within radius.
-  - Optional LOS check uses `nearby.castRay(..., { radius = 0 })` sparingly.
-  - Anti-thrash: pulse interval + cooldown + no-op if already on selected target.
-- **Combat package normalization (critical)**:
-  - On retarget: `AI.removePackages('Combat')` then `AI.startPackage({ type='Combat', target=best })`.
-  - This intentionally normalizes only Combat packages and preserves non-Combat package types.
-- **Defender classification** (`defender_local.lua`, conservative v1):
-  - Active `Follow`/`Escort` targeting player.
-  - Any package with `sideWithTarget = true` and `target = player`.
-  - No fake summon API, no undocumented hostility inference.
+- **Registration via `.omwscripts`** with one script per line and `<flags>: <path>` format.
+- **Local scripts** (`enemy_local.lua`, `defender_local.lua`) use nearby state and only mutate self/local decisions.
+- **Global script** (`global.lua`) owns writable registry state in global storage and receives local->global events via `core.sendGlobalEvent`.
+- **Runtime registry** is stored in `storage.globalSection('BetterAITargeting_Runtime')`, explicitly marked `Temporary`, and mutated using `getCopy(...)`.
+- **Enemy retargeting** (`enemy_local.lua`):
+  - runs on pulse from `onUpdate(dt)`.
+  - checks active combat target with `AI.getActiveTarget('Combat')`.
+  - only applies override when active combat target is player.
+  - picks nearest registered nearby defender by squared distance (`Vector3:length2()`).
+  - optional LOS check (`nearby.castRay`) with `radius = 0`.
+  - anti-thrash via pulse + cooldown.
+- **Combat package normalization**:
+  - remove only combat packages (`AI.removePackages('Combat')`).
+  - restart combat with `AI.startPackage({ type='Combat', target=best, cancelOther=false })` so non-combat packages are not canceled by default behavior.
+- **Defender classification (conservative v1)** (`defender_local.lua`):
+  - active Follow/Escort targeting player, or
+  - any package with `sideWithTarget=true` and target player.
 
 ## File layout
 
@@ -43,76 +36,61 @@ BetterAITargeting/
         shared.lua
         settings.lua
   l10n/
-    en.yaml
+    YourName/
+      BetterAITargeting/
+        en.yaml
   README.md
 ```
 
 ## Installation
 
 1. Copy `BetterAITargeting/` into your OpenMW data path.
-2. Enable `BetterAITargeting.omwscripts` in the OpenMW launcher (or add it to openmw.cfg content list).
-3. Launch the game and open Mod Settings to tune options:
-   - enabled
-   - pulseSeconds
-   - scanRadius
-   - useLineOfSight
-   - retargetCooldownSeconds
-   - debugLogging
+2. Enable `BetterAITargeting.omwscripts` in OpenMW launcher.
+3. Configure settings in Mod Settings page.
 
-## Testing (manual, in-game)
+## Testing (manual)
 
-1. Spawn/bring at least one follower or escort-style ally.
-2. Enter combat with one or more hostile NPC/creatures.
-3. Confirm hostiles initially targeting player can switch to helper when helper is nearby.
-4. Toggle LOS option and verify retarget frequency changes around obstacles.
-5. Enable debug logging and inspect log output for:
-   - active target checks
-   - defender counts
-   - LOS rejections
-   - retarget decisions
-   - combat package normalization messages
+1. Bring follower/escort helper.
+2. Start combat with hostile enemies.
+3. Verify enemies targeting player can retarget to registered helper in range.
+4. Toggle LOS and compare behavior around obstacles.
+5. Enable debug logging and confirm reasons/decisions in logs.
 
 ## Why this design matches OpenMW constraints
 
-- Uses local scripts for nearby queries and per-actor logic.
-- Uses global script for writable shared registry state.
-- Uses global events for local→global communication.
-- Uses documented AI package APIs and package fields.
-- Uses documented storage lifetime and `getCopy` mutation rule.
-- Keeps v1 as a narrow override layer rather than recreating hidden engine heuristics.
+- Nearby scans are local-script only.
+- Shared writable state is global-script only.
+- Local->global communication uses documented global events.
+- Settings use documented settings interface/renderers.
+- AI control uses documented package APIs; no undocumented hostility APIs.
 
 ## Known limitations
 
-- There is no universal documented Lua hostility query used here; “hostile” is inferred conservatively by “actor currently has active Combat target = player”.
-- Summon detection is not hard-coded with undocumented APIs; summon-like support is only recognized via documented package relations.
-- Reachability/path quality and deep internal action-rating checks are not replicated; optional LOS is the only cheap visibility filter.
-- Registry is runtime-only (`Temporary`) and intentionally not persisted across saves/reloads.
+- Summons may be missed if they do not expose conservative package signals used by v1.
+- No deep engine reachability/threat replication (intentional for maintainable Lua-only v1).
+- Hostility inference is intentionally narrow: override only when current active combat target is player.
 
 ## OpenMW documentation references used
 
-- Overview (script contexts, global/local model):
+- Overview:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/overview.html
-- Engine handlers (`onUpdate`, `onInactive`, local/global handler scopes):
+- Engine handlers:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/engine_handlers.html
-- AI interface (`getActiveTarget`, `getActivePackage`, `forEachPackage`, `removePackages`, `startPackage`, package fields):
+- AI interface:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/interface_ai.html
-- Built-in AI package schema/examples (`Combat`, `Follow`, `Escort`, `StartAIPackage` event pattern):
+- AI packages:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/aipackages.html
-- Nearby API (`nearby.actors`, `nearby.players`, `castRay`, local-only constraints):
+- Nearby API:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/openmw_nearby.html
-- Self object (local self access):
+- Self API:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/openmw_self.html
-- Util vectors (`Vector3` arithmetic and length/length2):
+- Util vectors:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/openmw_util.html
-- Storage (`globalSection`, lifetime, `get`/`getCopy` semantics):
+- Storage:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/openmw_storage.html
 - Settings interface:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/interface_settings.html
-- Setting renderer keys (`checkbox`, `number`):
+- Setting renderers:
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/setting_renderers.html
-- Core global events (`core.sendGlobalEvent`):
+- Core (`sendGlobalEvent`):
   - https://openmw.readthedocs.io/en/openmw-0.49.0/reference/lua-scripting/openmw_core.html
-- Clarifying interface index/latest docs:
-  - https://openmw.readthedocs.io/en/latest/reference/lua-scripting/index_interfaces.html
-  - https://openmw.readthedocs.io/en/latest/reference/lua-scripting/interface_settings.html
-  - https://openmw.readthedocs.io/en/stable/reference/lua-scripting/overview.html
