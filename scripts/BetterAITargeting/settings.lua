@@ -1,13 +1,21 @@
 local I = require('openmw.interfaces')
 
-I.Settings.registerPage {
+local Settings = I.Settings
+if type(Settings) ~= 'table'
+    or type(Settings.registerPage) ~= 'function'
+    or type(Settings.registerGroup) ~= 'function' then
+    print('[BetterAITargeting][SETTINGS] Settings UI unavailable here; using defaults')
+    return {}
+end
+
+Settings.registerPage {
     key = 'BetterAITargeting',
     l10n = 'BetterAITargeting',
     name = 'pageName',
     description = 'pageDescription',
 }
 
-I.Settings.registerGroup {
+Settings.registerGroup {
     key = 'SettingsGlobalBetterAITargeting',
     page = 'BetterAITargeting',
     l10n = 'BetterAITargeting',

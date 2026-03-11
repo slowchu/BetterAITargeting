@@ -95,12 +95,6 @@ local function pulseRetarget()
         shared.log(debugLogging, 'TARGET', 'skip: no valid defender in range')
         return
     end
-
-    if activeTarget == best then
-        shared.log(debugLogging, 'TARGET', ('skip: already targeting selected defender %s'):format(best.id))
-        return
-    end
-
     shared.log(debugLogging, 'TARGET', ('retargeting to %s, distance2=%.2f'):format(best.id, bestDistanceSq))
     clearCombatPackages(debugLogging)
     AI.startPackage({ type = 'Combat', target = best, cancelOther = false })
