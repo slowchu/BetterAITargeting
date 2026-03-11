@@ -59,7 +59,7 @@ BetterAITargeting/
 - Nearby scans are local-script only.
 - Shared writable state is global-script only.
 - Local->global communication uses documented global events.
-- Settings use documented settings interface/renderers, with a compatibility fallback if `Settings.registerPage` is unavailable in a given runtime build/context.
+- Settings use documented settings interface/renderers; if settings APIs are unavailable in this runtime context, the mod logs and falls back to defaults.
 - AI control uses documented package APIs; no undocumented hostility APIs.
 
 ## Known limitations

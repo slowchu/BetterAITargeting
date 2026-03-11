@@ -1,26 +1,23 @@
 local I = require('openmw.interfaces')
 
 local Settings = I.Settings
-if type(Settings) ~= 'table' or type(Settings.registerGroup) ~= 'function' then
-    print('[BetterAITargeting][SETTINGS] Settings interface is unavailable in this context; skipping settings registration')
+if type(Settings) ~= 'table'
+    or type(Settings.registerPage) ~= 'function'
+    or type(Settings.registerGroup) ~= 'function' then
+    print('[BetterAITargeting][SETTINGS] Settings UI unavailable here; using defaults')
     return {}
 end
 
-local pageKey = 'BetterAITargeting'
-if type(Settings.registerPage) == 'function' then
-    Settings.registerPage {
-        key = pageKey,
-        l10n = 'BetterAITargeting',
-        name = 'pageName',
-        description = 'pageDescription',
-    }
-else
-    print('[BetterAITargeting][SETTINGS] Settings.registerPage is unavailable; registering group without custom page')
-    pageKey = nil
-end
+Settings.registerPage {
+    key = 'BetterAITargeting',
+    l10n = 'BetterAITargeting',
+    name = 'pageName',
+    description = 'pageDescription',
+}
 
-local group = {
+Settings.registerGroup {
     key = 'SettingsGlobalBetterAITargeting',
+    page = 'BetterAITargeting',
     l10n = 'BetterAITargeting',
     name = 'groupName',
     permanentStorage = false,
@@ -66,11 +63,5 @@ local group = {
         },
     },
 }
-
-if pageKey then
-    group.page = pageKey
-end
-
-Settings.registerGroup(group)
 
 return {}
